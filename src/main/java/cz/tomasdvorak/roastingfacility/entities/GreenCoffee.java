@@ -1,6 +1,7 @@
 package cz.tomasdvorak.roastingfacility.entities;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 public class GreenCoffee {
@@ -14,6 +15,9 @@ public class GreenCoffee {
     @ManyToOne
     @JoinColumn(name = "facility_id")
     private Facility facility;
+
+    @OneToMany(mappedBy = "greenCoffee")
+    private List<RoastingProcess> roastingProcesses;
 
     public GreenCoffee() {
     }

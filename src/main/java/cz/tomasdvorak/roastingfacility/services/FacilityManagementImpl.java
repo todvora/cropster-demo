@@ -11,6 +11,8 @@ import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Time;
+import java.util.Date;
 import java.util.List;
 
 class FacilityManagementImpl implements FacilityManagement {
@@ -81,7 +83,11 @@ class FacilityManagementImpl implements FacilityManagement {
 
         logger.info("Roasting started, we are roasting {} kg of {}. There are {} kg of this coffee remaining on stock", configuration.getStartWeight(), configuration.getGreenCoffee().getName(), stockStatusAfter.getStock());
 
-        //roastingProcessRepository.save(new RoastingProcess());
-        return null;
+        final int endWeight = configuration.getStartWeight();
+        Date startTime = new Date();
+        Date endTime = new Date();
+
+        RoastingProcess processReport = roastingProcessRepository.save(new RoastingProcess(configuration.getProductName(), configuration.getStartWeight(), endWeight, startTime, endTime, configuration.getGreenCoffee(), facility));
+        return processReport;
     }
 }

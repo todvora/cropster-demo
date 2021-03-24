@@ -1,4 +1,4 @@
-package cz.tomasdvorak.roastingfacility.services;
+package cz.tomasdvorak.roastingfacility.services.roasting;
 
 public class RoastingProperties {
     public static final double MIN_START_WEIGHT_IN_PERCENT = 65.0;

@@ -21,6 +21,11 @@ public class Facility {
     @OneToMany(mappedBy = "facility")
     private List<Machine> machines = new ArrayList<>();
 
+
+    @OneToMany(mappedBy = "facility")
+    private List<RoastingProcess> processes = new ArrayList<>();
+
+
     public Facility() {
     }
 

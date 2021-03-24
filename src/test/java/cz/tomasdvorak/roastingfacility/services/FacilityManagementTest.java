@@ -3,6 +3,7 @@ package cz.tomasdvorak.roastingfacility.services;
 import cz.tomasdvorak.roastingfacility.entities.Facility;
 import cz.tomasdvorak.roastingfacility.entities.GreenCoffee;
 import cz.tomasdvorak.roastingfacility.entities.Machine;
+import cz.tomasdvorak.roastingfacility.entities.RoastingProcess;
 import cz.tomasdvorak.roastingfacility.repositories.FacilityRepository;
 import cz.tomasdvorak.roastingfacility.services.roasting.IllegalRoastingConfiguration;
 import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
@@ -87,11 +88,13 @@ public class FacilityManagementTest {
 
         Machine roastMachine = facilityManagement.getAllMachines().stream().findAny().orElseThrow(() -> new RuntimeException("No roasting machine available"));
         GreenCoffee greenCoffee = facilityManagement.getAvailableGreenCoffee().stream().findAny().orElseThrow(() -> new RuntimeException("No green coffee available"));
-        RoastConfiguration configuration = new RoastConfiguration(roastMachine, greenCoffee, 50, 10);
+        RoastConfiguration configuration = new RoastConfiguration("junit roasting product #1", roastMachine, greenCoffee, 50, 10);
 
         configuration.validate();
 
-        facilityManagement.roast(configuration);
+        RoastingProcess report = facilityManagement.roast(configuration);
+
+        Assertions.assertEquals(50, report.getEndWeight());
     }
 
 }
