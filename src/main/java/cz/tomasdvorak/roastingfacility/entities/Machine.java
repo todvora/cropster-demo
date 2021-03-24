@@ -29,6 +29,10 @@ public class Machine {
         this.capacity = capacity;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public int getCapacity() {
         return capacity;
     }

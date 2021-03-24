@@ -12,10 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Time;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-class FacilityManagementImpl implements FacilityManagement {
+public class FacilityManagementImpl implements FacilityManagement {
 
     private static final Logger logger = LoggerFactory.getLogger(FacilityManagementImpl.class);
 
@@ -29,6 +30,11 @@ class FacilityManagementImpl implements FacilityManagement {
         this.machineRepository = machineRepository;
         this.facility = facility;
         this.roastingProcessRepository = roastingProcessRepository;
+    }
+
+    @Override
+    public Facility getFacility() {
+        return facility;
     }
 
     @Override
@@ -83,11 +89,13 @@ class FacilityManagementImpl implements FacilityManagement {
 
         logger.info("Roasting started, we are roasting {} kg of {}. There are {} kg of this coffee remaining on stock", configuration.getStartWeight(), configuration.getGreenCoffee().getName(), stockStatusAfter.getStock());
 
-        final int endWeight = configuration.getStartWeight();
-        Date startTime = new Date();
-        Date endTime = new Date();
+        Date startTime = configuration.getStartDate();
+        Calendar endTime = Calendar.getInstance();
+        endTime.add(Calendar.MINUTE, configuration.getDuration());
 
-        RoastingProcess processReport = roastingProcessRepository.save(new RoastingProcess(configuration.getProductName(), configuration.getStartWeight(), endWeight, startTime, endTime, configuration.getGreenCoffee(), facility));
-        return processReport;
+        // TODO: uh, oh, rounding here, float numbers forced to int database columns. Best solution?
+        final int endWeight = (int) Math.floor(configuration.getStartWeight() / configuration.getWeightLossInPercent());
+
+        return roastingProcessRepository.save(new RoastingProcess(configuration.getProductName(), configuration.getStartWeight(), endWeight, startTime, endTime.getTime(), configuration.getGreenCoffee(), facility));
     }
 }

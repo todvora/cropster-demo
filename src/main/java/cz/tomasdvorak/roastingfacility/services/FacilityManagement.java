@@ -1,5 +1,6 @@
 package cz.tomasdvorak.roastingfacility.services;
 
+import cz.tomasdvorak.roastingfacility.entities.Facility;
 import cz.tomasdvorak.roastingfacility.entities.GreenCoffee;
 import cz.tomasdvorak.roastingfacility.entities.Machine;
 import cz.tomasdvorak.roastingfacility.entities.RoastingProcess;
@@ -8,6 +9,11 @@ import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
 import java.util.List;
 
 public interface FacilityManagement {
+
+    /**
+     * Access the underlying entity, mainly for integration purposese
+     */
+    Facility getFacility();
 
     /**
      * Get all available green coffee stock supplies, even if they are already consumed

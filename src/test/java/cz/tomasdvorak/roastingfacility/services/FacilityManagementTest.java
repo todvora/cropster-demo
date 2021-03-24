@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +28,7 @@ public class FacilityManagementTest {
     @Autowired
     private FacilityService facilityService;
 
-    private FacilityManagementImpl facilityManagement;
+    private FacilityManagement facilityManagement;
 
     @BeforeEach
     public void createDemoFacility() {
@@ -88,7 +89,7 @@ public class FacilityManagementTest {
 
         Machine roastMachine = facilityManagement.getAllMachines().stream().findAny().orElseThrow(() -> new RuntimeException("No roasting machine available"));
         GreenCoffee greenCoffee = facilityManagement.getAvailableGreenCoffee().stream().findAny().orElseThrow(() -> new RuntimeException("No green coffee available"));
-        RoastConfiguration configuration = new RoastConfiguration("junit roasting product #1", roastMachine, greenCoffee, 50, 10);
+        RoastConfiguration configuration = new RoastConfiguration("junit roasting product #1", roastMachine, greenCoffee, 50, new Date(), 10, 8);
 
         configuration.validate();
 

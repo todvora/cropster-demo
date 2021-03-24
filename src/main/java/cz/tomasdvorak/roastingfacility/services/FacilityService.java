@@ -23,8 +23,7 @@ public class FacilityService {
      * We always want to operate on one facility, let's bind it here so we don't need to provide the facility
      * param for each operation in each service
      */
-    public FacilityManagementImpl getForFacility(Facility facility) {
+    public FacilityManagement getForFacility(Facility facility) {
         return new FacilityManagementImpl(facility, greenCoffeeRepository, machineRepository, roastingProcessRepository);
     }
-
 }
