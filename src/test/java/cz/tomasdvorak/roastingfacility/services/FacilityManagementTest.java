@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 
@@ -67,6 +68,13 @@ public class FacilityManagementTest {
         List<Machine> allMachines = facilityManagement.getAllMachines();
         Assertions.assertEquals(3, allMachines.size());
         Assertions.assertEquals(166, allMachines.stream().mapToInt(Machine::getCapacity).sum());
+    }
+
+    @Test
+    public void addMachineNonuniqueName() {
+        facilityManagement.addRoastingMachine("junit machine #1", 16);
+        // now use the very same machine name, should throw an exception since the name needs to be unique
+        Assertions.assertThrows(DataIntegrityViolationException.class, () -> facilityManagement.addRoastingMachine("junit machine #1", 60));
     }
 
     @Test

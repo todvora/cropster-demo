@@ -2,12 +2,14 @@ package cz.tomasdvorak.roastingfacility.entities;
 
 import javax.persistence.*;
 
+@Table(uniqueConstraints=@UniqueConstraint(columnNames={"name", "facility_id"}))
 @Entity
 public class Machine {
 
     @Id
     @GeneratedValue
     private Long id;
+
     private String name;
     /**
      *  The capacity determines how many kg of coffee one maximally can roast per roasting process
