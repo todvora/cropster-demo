@@ -4,6 +4,8 @@ import cz.tomasdvorak.roastingfacility.entities.Facility;
 import cz.tomasdvorak.roastingfacility.entities.GreenCoffee;
 import cz.tomasdvorak.roastingfacility.entities.Machine;
 import cz.tomasdvorak.roastingfacility.repositories.FacilityRepository;
+import cz.tomasdvorak.roastingfacility.services.roasting.IllegalRoastingConfiguration;
+import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,12 +26,12 @@ public class FacilityManagementTest {
     @Autowired
     private FacilityService facilityService;
 
-    private FacilityManagement facilityManagement;
+    private FacilityManagementImpl facilityManagement;
 
     @BeforeEach
     public void createDemoFacility() {
         Facility facility = facilityRepository.save(new Facility("junit facility"));
-        facilityManagement = facilityService.forFacility(facility);
+        facilityManagement = facilityService.getForFacility(facility);
     }
 
     @Test
@@ -78,12 +80,13 @@ public class FacilityManagementTest {
     }
 
     @Test
-    public void roast() {
-        facilityManagement.addRoastingMachine("junit machine #2", 60);
+    public void roast() throws IllegalRoastingConfiguration {
+
+        facilityManagement.addRoastingMachine("junit machine #1", 60);
         facilityManagement.addToStock("Bildimoo Nensebo #1", 600);
 
-        Machine roastMachine = facilityManagement.getAllMachines().stream().findAny().get();
-        GreenCoffee greenCoffee = facilityManagement.getAvailableGreenCoffee().stream().findAny().get();
+        Machine roastMachine = facilityManagement.getAllMachines().stream().findAny().orElseThrow(() -> new RuntimeException("No roasting machine available"));
+        GreenCoffee greenCoffee = facilityManagement.getAvailableGreenCoffee().stream().findAny().orElseThrow(() -> new RuntimeException("No green coffee available"));
         RoastConfiguration configuration = new RoastConfiguration(roastMachine, greenCoffee, 50, 10);
 
         configuration.validate();
