@@ -20,6 +20,10 @@ public class Machine {
     @JoinColumn(name = "facility_id")
     private Facility facility;
 
+
+    /**
+     * JPA constructor
+     */
     public Machine() {
     }
 

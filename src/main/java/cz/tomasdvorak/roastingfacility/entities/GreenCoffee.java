@@ -16,9 +16,13 @@ public class GreenCoffee {
     @JoinColumn(name = "facility_id")
     private Facility facility;
 
+
     @OneToMany(mappedBy = "greenCoffee")
     private List<RoastingProcess> roastingProcesses;
 
+    /**
+     * JPA constructor
+     */
     public GreenCoffee() {
     }
 

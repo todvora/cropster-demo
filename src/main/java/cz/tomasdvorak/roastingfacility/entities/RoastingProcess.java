@@ -46,6 +46,10 @@ public class RoastingProcess {
         this.facility = facility;
     }
 
+    public RoastingProcess(Facility facility) {
+        this.facility = facility;
+    }
+
     public Long getId() {
         return id;
     }

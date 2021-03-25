@@ -7,11 +7,12 @@ import cz.tomasdvorak.roastingfacility.entities.RoastingProcess;
 import cz.tomasdvorak.roastingfacility.repositories.GreenCoffeeRepository;
 import cz.tomasdvorak.roastingfacility.repositories.MachineRepository;
 import cz.tomasdvorak.roastingfacility.repositories.RoastingProcessRepository;
+import cz.tomasdvorak.roastingfacility.services.roasting.IllegalRoastConfiguration;
 import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Time;
+import javax.transaction.Transactional;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -39,7 +40,7 @@ public class FacilityManagementImpl implements FacilityManagement {
 
     @Override
     public List<GreenCoffee> getGreenCoffeeStock() {
-        return greenCoffeeRepository.getByFacility(facility);
+        return greenCoffeeRepository.findByFacility(facility);
     }
 
     @Override
@@ -55,12 +56,6 @@ public class FacilityManagementImpl implements FacilityManagement {
         return this.greenCoffeeRepository.save(new GreenCoffee(facility, greenCoffeeName, amountInKgs));
     }
 
-    /**
-     * This method updates the weight to the provided value, we could also provide just delta, depending on the use-case
-     * @param greenCoffee
-     * @param amountInKgs
-     * @return
-     */
     @Override
     public GreenCoffee updateStock(GreenCoffee greenCoffee, int amountInKgs) {
         if(amountInKgs < 0) {
@@ -77,25 +72,46 @@ public class FacilityManagementImpl implements FacilityManagement {
 
     @Override
     public List<Machine> getAllMachines() {
-        return machineRepository.getByFacility(facility);
+        return machineRepository.findByFacility(facility);
     }
 
+    /*
+     * TODO: this method should be probably transactional, if the persisting of the RoastingProcess fails, it should also rollback
+     * the GreenCoffee stock update, if that makes sense in real world? As this is not explicitly mentioned in the challenge description,
+     * I'll just keep the @Transactional annotation here and the comment. In real app, it would need some additional configuration,
+     * thinking about the scope of the transaction, and proper tests.
+     */
+    @Transactional
     @Override
-    public RoastingProcess roast(RoastConfiguration configuration) {
+    public RoastingProcess roast(RoastConfiguration configuration) throws IllegalRoastConfiguration {
 
+        // run some basic sanity checks of the configuration
+        configuration.validate();
 
+        // update the green coffee stock to the post-roast weight (should this happen before or after roasting? What makes sense in real world?)
         int newStockWeight = configuration.getGreenCoffee().getStock() - configuration.getStartWeight();
         GreenCoffee stockStatusAfter = updateStock(configuration.getGreenCoffee(), newStockWeight);
 
         logger.info("Roasting started, we are roasting {} kg of {}. There are {} kg of this coffee remaining on stock", configuration.getStartWeight(), configuration.getGreenCoffee().getName(), stockStatusAfter.getStock());
 
         Date startTime = configuration.getStartDate();
-        Calendar endTime = Calendar.getInstance();
-        endTime.add(Calendar.MINUTE, configuration.getDuration());
+        Date endTime = getEndTime(startTime, configuration.getDuration());
 
-        // TODO: uh, oh, rounding here, float numbers forced to int database columns. Best solution?
-        final int endWeight = (int) Math.floor(configuration.getStartWeight() / configuration.getWeightLossInPercent());
+        // TODO: uh, oh, rounding here, float numbers forced to int database columns. Best solution? How is the rounding solved in real world? How exact are the
+        // scales of machines and roasting facilities?
+        final int endWeight = (int) (configuration.getStartWeight() - configuration.getStartWeight() * (configuration.getWeightLossInPercent() / 100.0));
+        RoastingProcess processEntry = new RoastingProcess(configuration.getProductName(), configuration.getStartWeight(), endWeight, startTime, endTime, configuration.getGreenCoffee(), facility);
+        return roastingProcessRepository.save(processEntry);
+    }
 
-        return roastingProcessRepository.save(new RoastingProcess(configuration.getProductName(), configuration.getStartWeight(), endWeight, startTime, endTime.getTime(), configuration.getGreenCoffee(), facility));
+    private Date getEndTime(Date startDate, int durationInMinutes) {
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(startDate);
+        endCal.add(Calendar.MINUTE, durationInMinutes);
+        return endCal.getTime();
+    }
+
+    public List<RoastingProcess> getRoastingProcesses() {
+        return roastingProcessRepository.findByFacility(facility);
     }
 }

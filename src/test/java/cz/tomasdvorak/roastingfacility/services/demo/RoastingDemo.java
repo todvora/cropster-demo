@@ -7,7 +7,9 @@ import cz.tomasdvorak.roastingfacility.entities.RoastingProcess;
 import cz.tomasdvorak.roastingfacility.repositories.FacilityRepository;
 import cz.tomasdvorak.roastingfacility.services.FacilityManagement;
 import cz.tomasdvorak.roastingfacility.services.FacilityService;
+import cz.tomasdvorak.roastingfacility.services.roasting.IllegalRoastConfiguration;
 import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @ActiveProfiles("demo")
 @SpringBootTest
@@ -115,39 +118,80 @@ public class RoastingDemo {
     }
 
     private void roastEverything(Facility facility) {
-
         FacilityManagement management = facilityService.getForFacility(facility);
-        List<GreenCoffee> stock = management.getAvailableGreenCoffee();
-        int totallyAvailableGreenCoffee = stock.stream().mapToInt(GreenCoffee::getStock).sum();
+
+        int totallyAvailableKgs = management.getAvailableGreenCoffee().stream().mapToInt(GreenCoffee::getStock).sum();
+        logger.info("Facility “{}: there are {}kgs of green coffee on stock", management.getFacility().getName(), totallyAvailableKgs);
+
+        do {
+            List<GreenCoffee> stock = management.getAvailableGreenCoffee();
+            Machine machine = pickMachine(management);
+            try {
+                roastOnMachine(management, machine, stock);
+            } catch (IllegalRoastConfiguration illegalRoastConfiguration) {
+                Assertions.fail("Invalid roast configuration detected!");
+            }
+        } while (isSomethingToRoast(management));
+
+        List<RoastingProcess> roastingProcesses = management.getRoastingProcesses();
+        int kgsBeforeRoast = roastingProcesses.stream().mapToInt(RoastingProcess::getStartWeight).sum();
+        int kgsAfterRoast = roastingProcesses.stream().mapToInt(RoastingProcess::getEndWeight).sum();
+
+        logger.info("Facility “{}: there are {} entries, totally {}kgs before and {}kgs after roast", management.getFacility().getName(), roastingProcesses.size(), kgsBeforeRoast, kgsAfterRoast);
+
+        // verify that total amount of green coffee on the stock before roasting equals sum of all start weights of roastings
+        Assertions.assertEquals(totallyAvailableKgs, kgsBeforeRoast);
+
+        // verify that total weight after all roast is in range 8-15% loss
+        double weightLossInPercent = 100 - 100.0 / kgsBeforeRoast * kgsAfterRoast;
+        Assertions.assertTrue(weightLossInPercent >= 8);
+        Assertions.assertTrue(weightLossInPercent <= 15);
+
+        // verify durations, every single one for a valid range 5-15 minutes
+        List<Integer> durationsInMinutes = roastingProcesses.stream().map(s -> (int) ((s.getEndTime().getTime() - s.getStartTime().getTime())) / 60_000).collect(Collectors.toList());
+        durationsInMinutes.forEach(duration -> {
+            Assertions.assertTrue(duration >= 5);
+            Assertions.assertTrue(duration <= 15);
+        });
 
 
 
-        List<Machine> machines = management.getAllMachines();
-
-        Machine machine = pickMachine(machines);
-        roastOnMachine(management, machine, stock);
     }
 
-    private void roastOnMachine(FacilityManagement management, Machine machine, List<GreenCoffee> stock) {
+    private boolean isSomethingToRoast(FacilityManagement management) {
+        return !management.getAvailableGreenCoffee().isEmpty();
+    }
+
+    private void roastOnMachine(FacilityManagement management, Machine machine, List<GreenCoffee> stock) throws IllegalRoastConfiguration {
         GreenCoffee greenCoffee = pickCoffee(stock);
         int capacity = machine.getCapacity();
-
         int startWeight = randomInclusive((int) Math.ceil(0.65 * capacity), capacity);
+        if(startWeight > greenCoffee.getStock()) {
+            startWeight = greenCoffee.getStock(); // assumption: let's roast what's left on stock, even if it's less than machine recommended filling
+            logger.info("Facility “{}: stock of {} is approaching zero, we'll roast what's left", management.getFacility().getName(), greenCoffee.getName());
+        }
         int roastDuration = randomInclusive(5, 15);
         int weightLossInPercent = randomInclusive(8, 15);
-        Date startDate = new Date();
+
+        Date startDate = getRandomStartDate();
 
         RoastConfiguration configuration = new RoastConfiguration("some roast", machine, greenCoffee, startWeight, startDate, roastDuration, weightLossInPercent);
-        RoastingProcess roastingProcess = management.roast(configuration);
+        management.roast(configuration);
+    }
 
-        logger.info("Facility “{}: roasted {}kgs of '{}' on {}", management.getFacility().getName(), startWeight, greenCoffee.getName(), machine.getName());
+    private Date getRandomStartDate() {
+        Calendar cal = Calendar.getInstance();
+        int randomSecondsDelta = randomInclusive(0, 86400);
+        cal.add(Calendar.SECOND, -randomSecondsDelta);
+        return cal.getTime();
     }
 
     private GreenCoffee pickCoffee(List<GreenCoffee> stock) {
         return stock.stream().findFirst().get(); // TODO!
     }
-
-    private Machine pickMachine(List<Machine> machines) {
-        return machines.stream().findFirst().get(); // TODO!
+    private Machine pickMachine(FacilityManagement management) {
+        List<Machine> machines = new ArrayList<>(management.getAllMachines());
+        Collections.shuffle(machines);
+        return machines.iterator().next();
     }
 }

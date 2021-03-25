@@ -7,6 +7,9 @@ import cz.tomasdvorak.roastingfacility.repositories.RoastingProcessRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Facility service is mainly a wrapper for repositories and services based around one facility.
+ */
 @Service
 public class FacilityService {
 

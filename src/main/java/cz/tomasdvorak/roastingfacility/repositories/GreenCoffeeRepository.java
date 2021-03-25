@@ -11,8 +11,8 @@ import java.util.List;
 
 @Repository
 public interface GreenCoffeeRepository extends JpaRepository<GreenCoffee, Long> {
-    @Query("select c from GreenCoffee c where c.facility = :facility")
-    List<GreenCoffee> getByFacility(@Param("facility") final Facility facility);
+
+    List<GreenCoffee> findByFacility(@Param("facility") final Facility facility);
 
     @Query("select c from GreenCoffee c where c.facility = :facility AND stock > 0")
     List<GreenCoffee> getAvailableByFacility(Facility facility);

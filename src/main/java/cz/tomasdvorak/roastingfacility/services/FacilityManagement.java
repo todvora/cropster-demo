@@ -4,6 +4,7 @@ import cz.tomasdvorak.roastingfacility.entities.Facility;
 import cz.tomasdvorak.roastingfacility.entities.GreenCoffee;
 import cz.tomasdvorak.roastingfacility.entities.Machine;
 import cz.tomasdvorak.roastingfacility.entities.RoastingProcess;
+import cz.tomasdvorak.roastingfacility.services.roasting.IllegalRoastConfiguration;
 import cz.tomasdvorak.roastingfacility.services.roasting.RoastConfiguration;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 public interface FacilityManagement {
 
     /**
-     * Access the underlying entity, mainly for integration purposese
+     * Access the underlying entity of the facility, mainly for integration purposes
      */
     Facility getFacility();
 
@@ -59,5 +60,11 @@ public interface FacilityManagement {
      * @param configuration details of the roasting process - which coffee, how much, for how long...
      * @return newly created and persisted RoastingProcess entity holding all the additional information about this run
      */
-    RoastingProcess roast(RoastConfiguration configuration);
+    RoastingProcess roast(RoastConfiguration configuration) throws IllegalRoastConfiguration;
+
+    /**
+     * List all available processes persisted for this facility. In real life, we would always need paging, as this
+     * List would be HUGE. For demo purposes it should be OK.
+     */
+    List<RoastingProcess> getRoastingProcesses();
 }

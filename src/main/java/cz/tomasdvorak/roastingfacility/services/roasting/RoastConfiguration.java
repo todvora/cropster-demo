@@ -52,11 +52,12 @@ public class RoastConfiguration {
         return startDate;
     }
 
-    public void validate() throws IllegalRoastingConfiguration {
+    public void validate() throws IllegalRoastConfiguration {
         int availableMachineCapacity = machine.getCapacity();
-        double capacityRatio = 100.0 / availableMachineCapacity * startWeight;
-        if(capacityRatio < RoastingProperties.MIN_START_WEIGHT_IN_PERCENT || capacityRatio > RoastingProperties.MAX_START_WEIGHT_IN_PERCENT) {
-            throw new IllegalArgumentException(String.format("Machine overloaded, available capacity %d kg, required capacity %d kg", availableMachineCapacity, startWeight));
+        if(availableMachineCapacity < startWeight) {
+            throw new IllegalRoastConfiguration(String.format("Machine overloaded, available capacity %d kg, required capacity %d kg", availableMachineCapacity, startWeight));
         }
+
+        // TODO: add more validations, here we could check timestamps and durations, ranges of weight loss... anything sensible
     }
 }
