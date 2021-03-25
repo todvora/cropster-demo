@@ -16,21 +16,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@ActiveProfiles("demo")
-@SpringBootTest
 /**
  * This would be probably better an integration test, accessing only exposed REST (or other) endpoints. But the endpoints
  * are beyond the scope of the challenge, so we'll access internal beans directly.
  */
-public class RoastingDemo {
+@SpringBootTest
+public class RoastingDemoTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(RoastingDemo.class);
+    private static final Logger logger = LoggerFactory.getLogger(RoastingDemoTest.class);
 
     @Autowired
     private FacilityRepository facilityRepository;
@@ -49,6 +47,20 @@ public class RoastingDemo {
         random = new Random(1); // set the seed to create random but repeatable values for the demo purposes
     }
 
+    @Test
+    public void runDemoRoasting() {
+
+        // create test facilities, their machines and put some green coffee to stock
+        createDemoFacilities();
+
+        // get all facilities and shuffle them, just so we don't start every time in the same order
+        List<Facility> availableFacilities = new ArrayList<>(facilityRepository.findAll());
+        Collections.shuffle(availableFacilities);
+
+        // run the roasting demo for all facilities, roast all green coffee
+        availableFacilities.forEach(this::roastEverything);
+    }
+
 
     public void createDemoFacilities() {
 
@@ -64,12 +76,9 @@ public class RoastingDemo {
 
         initializeGreenCoffee(facilityManagement1, 5, 500, 10_000);
         initializeGreenCoffee(facilityManagement2, 5, 500, 10_000);
-
-
     }
 
     private void initializeGreenCoffee(FacilityManagement facilityManagement, int beanTypesCount, int stockMin, int stockMax) {
-
         ArrayList<String> coffeeNames = new ArrayList<>(this.coffeeNames);
         Collections.shuffle(coffeeNames, random);
         coffeeNames.stream()
@@ -78,14 +87,13 @@ public class RoastingDemo {
                     GreenCoffee greenCoffee = facilityManagement.addToStock(coffeeName, randomInclusive(stockMin, stockMax));
                     logger.info("Facility “{}: added {}kgs of '{}' to the stock", facilityManagement.getFacility().getName(), greenCoffee.getStock(),  greenCoffee.getName());
                 });
-
     }
 
     private void initializeMachines(FacilityManagement facility, int countOfMachines, int minCapacity, int maxCapacity) {
         for (int i =1; i <= countOfMachines; i++) {
             String machineName = String.format("Roasting machine #%d", i);
             int capacity = randomInclusive(minCapacity, maxCapacity);
-            Machine machine = facility.addRoastingMachine(machineName, capacity);
+            facility.addRoastingMachine(machineName, capacity);
             logger.info("Facility “{}: created roasting machine {} with capacity {}kgs", facility.getFacility().getName(), machineName, capacity);
         }
     }
@@ -94,27 +102,6 @@ public class RoastingDemo {
         return random.ints(minCapacity, maxCapacity + 1) // Caution, we want random numbers inclusive both lower and upper bound!
                 .findFirst()
                 .getAsInt();
-    }
-
-    /**
-     * Fixed list of first 80 coffee names coming from https://hub.cropster.com/store, removed two strange :-)
-     */
-    private List<String> readCoffeeNames() throws IOException {
-        String fileContent = new String(getClass().getClassLoader().getResourceAsStream("coffee_names.txt").readAllBytes());
-        return Collections.unmodifiableList(Arrays.asList(fileContent.split("\n")));
-    }
-
-
-    @Test
-    public void runDemoRoasting() {
-
-        createDemoFacilities();
-
-        List<Facility> availableFacilities = new ArrayList<>(facilityRepository.findAll());
-        Collections.shuffle(availableFacilities);
-
-        availableFacilities
-                .forEach(this::roastEverything);
     }
 
     private void roastEverything(Facility facility) {
@@ -153,9 +140,14 @@ public class RoastingDemo {
             Assertions.assertTrue(duration >= 5);
             Assertions.assertTrue(duration <= 15);
         });
+    }
 
-
-
+    /**
+     * Fixed list of first 80 coffee names coming from https://hub.cropster.com/store, removed two strange :-)
+     */
+    private List<String> readCoffeeNames() throws IOException {
+        String fileContent = new String(getClass().getClassLoader().getResourceAsStream("coffee_names.txt").readAllBytes());
+        return Collections.unmodifiableList(Arrays.asList(fileContent.split("\n")));
     }
 
     private boolean isSomethingToRoast(FacilityManagement management) {
@@ -187,7 +179,15 @@ public class RoastingDemo {
     }
 
     private GreenCoffee pickCoffee(List<GreenCoffee> stock) {
-        return stock.stream().findFirst().get(); // TODO!
+
+        if(stock.size() < 1) {
+            throw new IllegalArgumentException("");
+        }
+
+        ArrayList<GreenCoffee> coffees = new ArrayList<>(stock);
+        Collections.shuffle(coffees);
+
+        return coffees.iterator().next();
     }
     private Machine pickMachine(FacilityManagement management) {
         List<Machine> machines = new ArrayList<>(management.getAllMachines());
